@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phasemeter_core"
+version = "0.1.0"
+description = "相位计核心采集程序"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "nidaqmx",
+    "h5py",
+]
+
+[tool.setuptools.packages.find]
+include = ["phasemeter_core*"]
