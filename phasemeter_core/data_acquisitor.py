@@ -17,7 +17,7 @@ class DataAcquisitor:
         self.task = nidaqmx.Task()  # 创建 DAQmx 任务
         for ch in config.CHANNELS:  # 添加通道
             self.task.ai_channels.add_ai_voltage_chan(ch)
-        self.task.timing.cfg_samp_clk_timing(rate=config.F_SAMP, sample_mode=AcquisitionType.CONTINUOUS)  # 设置采样率; 设置采样模式为连续采集
+        self.task.timing.cfg_samp_clk_timing(rate=config.F_SAMP, sample_mode=AcquisitionType.CONTINUOUS, samps_per_chan=config.F_SAMP)  # 设置采样率; 设置采样模式为连续采集
         self.reader = AnalogMultiChannelReader(self.task.in_stream)
 
     def read_and_process(self):
