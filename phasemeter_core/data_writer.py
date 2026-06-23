@@ -1,5 +1,6 @@
 # data_writer.py
 
+import os
 import h5py
 import numpy as np
 from queue import Queue, Empty
@@ -24,6 +25,7 @@ class DataWriter:
         self.init_h5_file()
 
     def init_h5_file(self):
+        os.makedirs(os.path.dirname(os.path.abspath(self.filename)), exist_ok=True)
         with h5py.File(self.filename, 'w') as f:
             max_shape = (config.NUM_CHANNELS, config.F_PHASE*self.max_time) if self.max_time else (config.NUM_CHANNELS, None)
             chunk_size = (config.NUM_CHANNELS, config.F_PHASE)
