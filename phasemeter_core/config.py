@@ -11,5 +11,7 @@ REF = np.exp(-1j*2*np.pi * np.arange(int(F_SAMP/F_PHASE)) / int(F_SAMP/F_HET))  
 DEVICE_NAME = 'USB-6453'
 # CHANNEL_NAMES = ['ai0', 'ai16']
 CHANNEL_NAMES = ['ai0', 'ai1', 'ai2', 'ai3', 'ai4', 'ai5', 'ai6', 'ai7', 'ai16']
+CHANNELS_NAME = CHANNEL_NAMES
 CHANNELS = [f"{DEVICE_NAME}/{ch}" for ch in CHANNEL_NAMES]
 NUM_CHANNELS = len(CHANNELS)
+NUM_OUTPUTS = NUM_CHANNELS

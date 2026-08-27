@@ -11,10 +11,13 @@ dependencies = [
     "numpy",
     "nidaqmx",
     "h5py",
+    "PySide6",
+    "pyqtgraph",
 ]
 
 [project.scripts]
 phasemeter_capture_voltage = "phasemeter_core.capture_voltage:main"
+phasemeter_core = "phasemeter_core.ui.main:main"
 
 [tool.setuptools.packages.find]
 include = ["phasemeter_core*"]
