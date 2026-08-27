@@ -13,5 +13,8 @@ dependencies = [
     "h5py",
 ]
 
+[project.scripts]
+phasemeter_capture_voltage = "phasemeter_core.capture_voltage:main"
+
 [tool.setuptools.packages.find]
 include = ["phasemeter_core*"]
