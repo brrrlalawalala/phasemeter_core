@@ -11,7 +11,13 @@ from . import config
 class DataWriter:
     """Write phase samples from a queue into an HDF5 file."""
 
-    def __init__(self, input_queue: Queue, filename: str, time: int = None):
+    def __init__(
+        self,
+        input_queue: Queue,
+        filename: str,
+        time: int = None,
+        save_z: bool = False,
+    ):
         self.input_queue = input_queue
         self.max_time = time
         assert self.max_time is None or self.max_time >= 1, (
@@ -19,8 +25,14 @@ class DataWriter:
         )
         self.time = 0
         self.filename = filename if filename.endswith(".h5") else filename + ".h5"
+        self.save_z = save_z
         self.num_outputs = getattr(config, "NUM_OUTPUTS", config.NUM_CHANNELS)
         self.buffer = np.zeros((self.num_outputs, config.F_PHASE), dtype=np.float64)
+        self.z_buffer = (
+            np.zeros((config.NUM_CHANNELS, config.F_PHASE), dtype=np.complex128)
+            if self.save_z
+            else None
+        )
         self.buffer_index = 0
         self.is_interrupted = False
         self.thread = None
@@ -43,16 +55,38 @@ class DataWriter:
                 chunks=chunk_size,
                 dtype=np.float64,
             )
+            if self.save_z:
+                z_max_shape = (
+                    (config.NUM_CHANNELS, config.F_PHASE * self.max_time)
+                    if self.max_time
+                    else (config.NUM_CHANNELS, None)
+                )
+                z_chunk_size = (config.NUM_CHANNELS, config.F_PHASE)
+                h5_file.create_dataset(
+                    "z",
+                    shape=(config.NUM_CHANNELS, 0),
+                    maxshape=z_max_shape,
+                    chunks=z_chunk_size,
+                    dtype=np.complex128,
+                )
 
     def write(self):
         try:
             while not self.stop_event.is_set():
                 try:
                     data = self.input_queue.get(timeout=0.1)
-                    self.buffer[:, self.buffer_index] = data
+                    if self.save_z:
+                        phases, z = data
+                        self.buffer[:, self.buffer_index] = phases
+                        self.z_buffer[:, self.buffer_index] = z
+                    else:
+                        self.buffer[:, self.buffer_index] = data
                     self.buffer_index += 1
                     if self.buffer_index >= config.F_PHASE:
-                        self.flush_buffer(self.buffer)
+                        if self.save_z:
+                            self.flush_buffer(self.buffer, self.z_buffer)
+                        else:
+                            self.flush_buffer(self.buffer)
                         self.buffer_index = 0
                         self.time += 1
                     if self.max_time and self.time >= self.max_time:
@@ -63,16 +97,26 @@ class DataWriter:
             print(f"Write error: {e}.")
         finally:
             if self.buffer_index:
-                self.flush_buffer(self.buffer[:, : self.buffer_index])
+                if self.save_z:
+                    self.flush_buffer(
+                        self.buffer[:, : self.buffer_index],
+                        self.z_buffer[:, : self.buffer_index],
+                    )
+                else:
+                    self.flush_buffer(self.buffer[:, : self.buffer_index])
                 self.buffer_index = 0
 
-    def flush_buffer(self, buffer):
+    def flush_buffer(self, buffer, z_buffer=None):
         with h5py.File(self.filename, "a") as h5_file:
             dataset = h5_file["dataset"]
             old_size = dataset.shape[1]
             new_size = old_size + buffer.shape[1]
             dataset.resize((dataset.shape[0], new_size))
             dataset[:, old_size:new_size] = buffer
+            if self.save_z:
+                z_dataset = h5_file["z"]
+                z_dataset.resize((z_dataset.shape[0], new_size))
+                z_dataset[:, old_size:new_size] = z_buffer
 
     def start(self):
         self.thread = threading.Thread(target=self.write)

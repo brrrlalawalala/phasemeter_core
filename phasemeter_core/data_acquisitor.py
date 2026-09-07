@@ -10,8 +10,9 @@ from . import config
 from .phase_demodulator import PhaseDemodulator
 
 class DataAcquisitor:
-    def __init__(self, output_queue: Queue):
+    def __init__(self, output_queue: Queue, save_z: bool = False):
         self.output_queue = output_queue  # 相位序列将输出到队列 output_queue
+        self.save_z = save_z
         self.phase_demodulator = PhaseDemodulator()
         self.voltages = np.zeros((config.NUM_CHANNELS, config.N_PER_PHASE), dtype=np.float64)  # 缓冲区
         self.task = nidaqmx.Task()  # 创建 DAQmx 任务
@@ -23,8 +24,14 @@ class DataAcquisitor:
     def read_and_process(self):
         '''读取电压信号, 处理后输出一次相位.'''
         self.reader.read_many_sample(self.voltages, number_of_samples_per_channel=config.N_PER_PHASE, timeout=1)  # 读取电压信号, 存储到 self.voltages
-        phases = self.phase_demodulator.demodulate_phase(self.voltages)
-        self.output_queue.put(phases.copy())  # 相位数组 (长度为 NUM_CHANNELS) 整体作为单个元素添加到 output_queue 末尾
+        if self.save_z:
+            phases, z = self.phase_demodulator.demodulate_phase(
+                self.voltages, return_z=True
+            )
+            self.output_queue.put((phases.copy(), z.copy()))
+        else:
+            phases = self.phase_demodulator.demodulate_phase(self.voltages)
+            self.output_queue.put(phases.copy())  # 相位数组 (长度为 NUM_CHANNELS) 整体作为单个元素添加到 output_queue 末尾
 
     def start(self):
         self.task.start()
