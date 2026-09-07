@@ -9,7 +9,7 @@ class PhaseDemodulator:
         self.phase_offsets = np.zeros(config.NUM_CHANNELS)  # 相位的偏移量, 是 2 pi 的整数倍
         self.last_phases = np.zeros(config.NUM_CHANNELS)  # 存储上一组相位解缠后的值
 
-    def demodulate_phase(self, data: np.ndarray):
+    def demodulate_phase(self, data: np.ndarray, return_z: bool = False):
         '''相位解调算法.
 
         解缠算法有效的前提是相位的变化速率小于 F_PHASE * pi / s.
@@ -34,4 +34,6 @@ class PhaseDemodulator:
         phases += self.phase_offsets
         self.last_phases = phases.copy()
 
+        if return_z:
+            return phases, z
         return phases

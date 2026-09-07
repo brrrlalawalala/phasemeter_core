@@ -11,11 +11,12 @@ def drive_and_daq(
     wave_generator_id: int,
     wave_table_id: int,
     num_periods: int,
+    save_z: bool = False,
 ):
     q = Queue()
     with (
-        DataAcquisitor(q) as data_acquisitor,
-        DataWriter(q, filename=filename, time=time) as data_writer,
+        DataAcquisitor(q, save_z=save_z) as data_acquisitor,
+        DataWriter(q, filename=filename, time=time, save_z=save_z) as data_writer,
         HexapodController() as hexapod_controller,
     ):
         print(

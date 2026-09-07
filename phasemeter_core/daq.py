@@ -7,9 +7,12 @@ from queue import Queue
 from .data_acquisitor import DataAcquisitor
 from .data_writer import DataWriter
 
-def daq(filename: str, time: int):
+def daq(filename: str, time: int, save_z: bool = False):
     q = Queue()  # 用于存放相位数据
-    with DataAcquisitor(q) as data_acquisitor, DataWriter(q, filename=filename, time=time) as data_writer:
+    with (
+        DataAcquisitor(q, save_z=save_z) as data_acquisitor,
+        DataWriter(q, filename=filename, time=time, save_z=save_z) as data_writer,
+    ):
         data_acquisitor.start()
         print(f'开始连续采集. 计划采集时间 {time} 秒. 按 Ctrl+C 停止.')
         try:
