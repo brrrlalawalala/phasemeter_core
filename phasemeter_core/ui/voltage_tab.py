@@ -1,6 +1,6 @@
 import numpy as np
 import pyqtgraph as pg
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QCheckBox,
     QGroupBox,
@@ -23,6 +23,8 @@ COLORS = [
     "#34495e",
 ]
 
+PLOT_REFRESH_INTERVAL_MS = 50
+
 
 class VoltageTab(QWidget):
     def __init__(self, parent=None):
@@ -31,7 +33,12 @@ class VoltageTab(QWidget):
         self._channel_checks = []
         self._num_channels = 0
         self._fsamp = 500_000
+        self._latest_voltages = None
         self._build_ui()
+        self._plot_timer = QTimer(self)
+        self._plot_timer.setInterval(PLOT_REFRESH_INTERVAL_MS)
+        self._plot_timer.timeout.connect(self._refresh_plots)
+        self._plot_timer.start()
 
     def _build_ui(self):
         main_layout = QHBoxLayout(self)
@@ -70,6 +77,7 @@ class VoltageTab(QWidget):
         self._curves.clear()
         self._channel_checks.clear()
         self._num_channels = 0
+        self._latest_voltages = None
         self.plot_widget.clear()
         self._clear_checkboxes()
         self._channels_info.setText("Waiting for acquisition data...")
@@ -93,7 +101,12 @@ class VoltageTab(QWidget):
     def on_voltage_data(self, voltages: np.ndarray):
         if self._num_channels == 0 or self._num_channels != voltages.shape[0]:
             return
+        self._latest_voltages = voltages
 
+    def _refresh_plots(self):
+        if self._latest_voltages is None:
+            return
+        voltages = self._latest_voltages
         time_axis = np.arange(voltages.shape[1]) / self._fsamp
         for i in range(voltages.shape[0]):
             if self._channel_checks[i].isChecked():
