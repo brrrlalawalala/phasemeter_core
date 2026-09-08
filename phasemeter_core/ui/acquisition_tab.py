@@ -2,7 +2,7 @@ import collections
 
 import numpy as np
 import pyqtgraph as pg
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QCheckBox,
     QGroupBox,
@@ -25,6 +25,8 @@ COLORS = [
     "#34495e",
 ]
 
+PLOT_REFRESH_INTERVAL_MS = 50
+
 
 class AcquisitionTab(QWidget):
     def __init__(self, parent=None):
@@ -39,6 +41,10 @@ class AcquisitionTab(QWidget):
         self._fphase = 1000
         self._duration = 60
         self._build_ui()
+        self._plot_timer = QTimer(self)
+        self._plot_timer.setInterval(PLOT_REFRESH_INTERVAL_MS)
+        self._plot_timer.timeout.connect(self._refresh_plots)
+        self._plot_timer.start()
 
     def _build_ui(self):
         main_layout = QHBoxLayout(self)
@@ -122,6 +128,11 @@ class AcquisitionTab(QWidget):
         for i in range(phases.shape[0]):
             self._time_buffers[i].append(timestamp)
             self._phase_buffers[i].append(phases[i])
+
+    def _refresh_plots(self):
+        for i in range(self._num_outputs):
+            if not self._output_checks[i].isChecked():
+                continue
             self._curves[i].setData(
                 np.array(self._time_buffers[i]),
                 np.array(self._phase_buffers[i]),
