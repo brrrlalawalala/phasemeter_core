@@ -5,4 +5,5 @@ from .drive_and_daq import drive_and_daq
 from .hexapod_controller import HexapodController
 from .read_h5_file import read_h5_file
 from .read_h5_file_z import read_h5_file_z
+from .start_wave_generator import start_wave_generator
 from .capture_voltage import capture_voltage
